@@ -3,7 +3,7 @@ from discord.ext import commands
 import json
 import os
 
-RECALL_FILE = "recall_messages.json"
+RECALL_FILE = os.path.join(os.path.dirname(__file__), "recall_messages.json")
 
 # Make sure the JSON file exists
 if not os.path.exists(RECALL_FILE):
