@@ -7,8 +7,7 @@ RECALL_FILE = "recall_messages.json"
 
 # Make sure the JSON file exists
 if not os.path.exists(RECALL_FILE):
-    with open(RECALL_FILE, 'w') as f:
-        json.dump({}, f)
+    raise FileNotFoundError(f"❌ '{RECALL_FILE}' not found. Please create it manually with initial content.")
 
 class Recall(commands.Cog):
     def __init__(self, bot):
