@@ -21,6 +21,7 @@ async def setup_hook():
     await bot.load_extension("commands.locker")  # You can add more like cogs.admin, cogs.games etc.
     await bot.load_extension("commands.welcomer")
     await bot.load_extension("commands.purge")
+    await bot.load_extension("commands.recall")
 
 keep_alive()
 
