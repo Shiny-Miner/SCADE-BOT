@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 import os
+from keep_alive import keep_alive
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -20,6 +21,8 @@ async def setup_hook():
     await bot.load_extension("commands.locker")  # You can add more like cogs.admin, cogs.games etc.
     await bot.load_extension("commands.welcomer")
     await bot.load_extension("commands.purge")
+
+keep_alive()
 
 TOKEN = os.environ.get("DISCORD_TOKEN")
 if TOKEN is None:
