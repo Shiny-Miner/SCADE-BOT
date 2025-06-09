@@ -17,6 +17,13 @@ async def on_ready():
     print(f'Logged in as {bot.user} (ID: {bot.user.id})')
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name="with the world Sir Shiny created!"))
 
+    # Load reaction roles data manually
+    rr_cog = bot.get_cog("ReactionRoles")
+    if rr_cog:
+        await rr_cog.load_reaction_roles()
+    else:
+        print("⚠️ ReactionRoles cog not found. Skipping reaction role loading.")
+
 # Load all jokes from the "jokes" folder
 @bot.event
 async def setup_hook():
