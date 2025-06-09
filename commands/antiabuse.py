@@ -76,21 +76,24 @@ class AntiAbuseProtector(commands.Cog):
 
     @tasks.loop(seconds=60)
     async def cleanup_loop(self):
-        now = time.time()
-        for logs in (self.msg_logs, self.attach_logs, self.repeated_logs):
-            for user_id in list(logs.keys()):
-                if isinstance(logs[user_id], list):
-                    logs[user_id] = [t for t in logs[user_id] if now - t < TIME_WINDOW]
-                    if not logs[user_id]:
-                        del logs[user_id]
-                else:
-                    logs[user_id] = [
-                        (msg, ch, ts)
-                        for msg, ch, ts in logs[user_id]
-                        if now - ts < HACK_WINDOW
-                    ]
-                    if not logs[user_id]:
-                        del logs[user_id]
+        try:
+            now = time.time()
+            for logs in (self.msg_logs, self.attach_logs, self.repeated_logs):
+                for user_id in list(logs.keys()):
+                    if isinstance(logs[user_id], list):
+                        logs[user_id] = [t for t in logs[user_id] if now - t < TIME_WINDOW]
+                        if not logs[user_id]:
+                            del logs[user_id]
+                    else:
+                        logs[user_id] = [
+                            (msg, ch, ts)
+                            for msg, ch, ts in logs[user_id]
+                            if now - ts < HACK_WINDOW
+                        ]
+                        if not logs[user_id]:
+                            del logs[user_id]
+        except Exception as e:
+            print(f"[cleanup_loop ERROR] {type(e).__name__}: {e}")
 
 async def setup(bot):
     await bot.add_cog(AntiAbuseProtector(bot))
