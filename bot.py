@@ -6,6 +6,8 @@ from keep_alive import keep_alive
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True  # 🔥 Required for on_member_join
+intents.guilds = True
+intents.reactions = True
 
 
 bot = commands.Bot(command_prefix="!", intents=intents)
@@ -13,7 +15,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 @bot.event
 async def on_ready():
     print(f'Logged in as {bot.user} (ID: {bot.user.id})')
-    await client.change_presence(activity=discord.Game(name="with the world Sir Shiny created!"))
+    await bot.change_presence(activity=discord.Game(name="with the world Sir Shiny created!"))
 
 # Load all jokes from the "jokes" folder
 @bot.event
