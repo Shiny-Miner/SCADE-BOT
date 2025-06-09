@@ -6,22 +6,27 @@ class EmojiManager(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(name="emoji_add")
+    @emoji.command(name="add")
     @commands.has_permissions(manage_emojis=True)
-    async def emoji_add(self, ctx, emoji_id: int):
-        url = f"https://cdn.discordapp.com/emojis/{emoji_id}.png"
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as resp:
-                    if resp.status != 200:
-                        return await ctx.send("❌ Failed to fetch emoji.")
-                    data = await resp.read()
-            emoji = await ctx.guild.create_custom_emoji(name=f"emoji_{emoji_id}", image=data)
-            await ctx.send(f"✅ Added emoji: <:{emoji.name}:{emoji.id}>")
-        except discord.Forbidden:
-            await ctx.send("❌ I don't have permission to add emojis.")
-        except Exception as e:
-            await ctx.send(f"❌ Error: {e}")
+    async def add(self, ctx, emoji_id: int):
+        base_url = f"https://cdn.discordapp.com/emojis/{emoji_id}"
+        for ext in ['gif', 'png']:
+            url = f"{base_url}.{ext}"
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(url) as resp:
+                        if resp.status != 200:
+                            continue  # Try next extension
+                        data = await resp.read()
+                        emoji = await ctx.guild.create_custom_emoji(name=f"emoji_{emoji_id}", image=data)
+                        await ctx.send(f"✅ Added emoji: <{'a' if ext == 'gif' else ''}:{emoji.name}:{emoji.id}>")
+                        return
+            except discord.Forbidden:
+                return await ctx.send("❌ I don't have permission to add emojis.")
+            except Exception as e:
+                return await ctx.send(f"❌ Error: {e}")
+        await ctx.send("❌ Failed to fetch emoji as either PNG or GIF.")
+
 
     @commands.command(name="emoji_remove")
     @commands.has_permissions(manage_emojis=True)
