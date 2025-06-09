@@ -1,9 +1,9 @@
 from discord.ext import commands
 import discord
 import random
-import aiohttp  # use aiohttp for async requests
+import aiohttp
 
-GROQ_API_KEY = "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"  # ⬅️ Replace this with your Groq key
+GROQ_API_KEY = "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"
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 
@@ -38,10 +38,10 @@ async def generate_witty_reply(user_message):
             print(f"GROQ API error: {e}")
             return "Oops! I tripped over a wire again."
 
+
 class Fun(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.joke_channel_id = 123456789012345678  # Replace with your actual channel ID
         self.jokes = [
             "Why did the chicken join a band? Because it had the drumsticks!",
             "I told my computer I needed a break, and now it won't stop sending me vacation ads.",
@@ -49,28 +49,18 @@ class Fun(commands.Cog):
             "Why do Java developers wear glasses? Because they don't see sharp.",
         ]
 
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        if message.author.bot:
+    @commands.command(name="chat")
+    async def chat_command(self, ctx, *, message: str = None):
+        """Chat with the AI using !chat [message]"""
+        if not message:
+            await ctx.send("Say something after `!chat`!")
             return
-
-        # Respond if user types `!chat some message`
-        if message.content.lower().startswith("!chat "):
-            user_message = message.content[6:].strip()  # removes "!chat " part
-            if not user_message:
-                await message.channel.send("Say something after `!chat`!")
-                return
-            try:
-                witty_response = await generate_witty_reply(message.content)
-                await message.channel.send(witty_response)
-            except Exception as e:
-                await message.channel.send("Oops! I tripped over a wire trying to think of something witty. 🤖")
-                print(f"GROQ API error: {e}")
-            return
-
-        # ✅ Only process if it's NOT a command
-        if not message.content.startswith(self.bot.command_prefix):
-            await self.bot.process_commands(message)
+        try:
+            reply = await generate_witty_reply(message)
+            await ctx.send(reply)
+        except Exception as e:
+            print(f"GROQ API error: {e}")
+            await ctx.send("Oops! I tripped over a wire trying to think of something witty. 🤖")
 
 async def setup(bot):
     await bot.add_cog(Fun(bot))
