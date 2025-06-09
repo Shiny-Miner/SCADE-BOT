@@ -29,6 +29,7 @@ async def setup_hook():
     await bot.load_extension("commands.antiabuse")
     await bot.load_extension("commands.rr")
     await bot.load_extension("commands.poll")
+    await bot.load_extension("commands.afk")
 
 
 keep_alive()
