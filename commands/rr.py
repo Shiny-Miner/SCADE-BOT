@@ -3,7 +3,7 @@ from discord.ext import commands
 import json
 import os
 
-REACTION_ROLE_FILE = "reaction_roles.json"
+REACTION_ROLE_FILE = os.path.join(os.path.dirname(__file__), "reaction_roles.json")
 
 def load_data():
     if os.path.exists(REACTION_ROLE_FILE):
