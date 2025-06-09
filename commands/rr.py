@@ -69,13 +69,23 @@ class ReactionRoles(commands.Cog):
     async def rr_remove(self, ctx, message_id: int, emoji: str):
         """Remove a linked reaction role from a message."""
         msg_id = str(message_id)
+
+        # Try to convert the emoji
+        try:
+            partial = await commands.PartialEmojiConverter().convert(ctx, emoji)
+            emoji_key = normalize_emoji(partial)
+            emoji_to_remove = partial
+        except commands.PartialEmojiConversionFailure:
+            emoji_key = emoji  # unicode
+            emoji_to_remove = emoji
+
         if msg_id not in self.data:
             return await ctx.send("❌ No reaction roles found for that message.")
 
-        if emoji not in self.data[msg_id]:
+        if emoji_key not in self.data[msg_id]:
             return await ctx.send("❌ That emoji is not linked to any role on that message.")
 
-        del self.data[msg_id][emoji]
+        del self.data[msg_id][emoji_key]
         if not self.data[msg_id]:
             del self.data[msg_id]
 
@@ -83,12 +93,12 @@ class ReactionRoles(commands.Cog):
 
         try:
             message = await ctx.channel.fetch_message(message_id)
-            await message.clear_reaction(emoji)
+            await message.clear_reaction(emoji_to_remove)
         except Exception as e:
             await ctx.send("⚠️ Couldn't remove emoji from the message, but mapping was removed.")
             print(f"[rr_remove] Error removing emoji: {e}")
 
-        await ctx.send(f"✅ Removed reaction role link for `{emoji}` on message `{message_id}`.")
+        await ctx.send(f"✅ Removed reaction role link for `{emoji_key}` on message `{message_id}`.")
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
