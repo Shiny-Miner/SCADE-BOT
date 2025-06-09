@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 
-class Moderation(commands.Cog):
+class Moderation2(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.warns = {}  # Simple in-memory warning tracker
