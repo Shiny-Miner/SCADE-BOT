@@ -6,6 +6,10 @@ class EmojiManager(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    @commands.group(name="emoji", invoke_without_command=True)
+    async def emoji(self, ctx):
+        await ctx.send("Usage: `!emoji add <emoji_id>` or `!emoji remove <emoji_id>`")
+
     @emoji.command(name="add")
     @commands.has_permissions(manage_emojis=True)
     async def add(self, ctx, emoji_id: int):
@@ -27,10 +31,9 @@ class EmojiManager(commands.Cog):
                 return await ctx.send(f"❌ Error: {e}")
         await ctx.send("❌ Failed to fetch emoji as either PNG or GIF.")
 
-
-    @commands.command(name="emoji_remove")
+    @emoji.command(name="remove")
     @commands.has_permissions(manage_emojis=True)
-    async def emoji_remove(self, ctx, emoji_id: int):
+    async def remove(self, ctx, emoji_id: int):
         emoji = discord.utils.get(ctx.guild.emojis, id=emoji_id)
         if emoji:
             try:
