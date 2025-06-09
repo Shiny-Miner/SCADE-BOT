@@ -6,7 +6,7 @@ import discord
 class Welcomer(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.welcome_channel_id = 1378218632672444510  # Change this if you want to hardcode
+        self.welcome_channel_id = 1068883217769316415  # Change this if you want to hardcode
 
     def get_fallback_channel(self, guild: discord.Guild):
         for channel in guild.text_channels:

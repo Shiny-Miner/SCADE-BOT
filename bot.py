@@ -30,6 +30,7 @@ async def setup_hook():
     await bot.load_extension("commands.rr")
     await bot.load_extension("commands.poll")
     await bot.load_extension("commands.afk")
+    await bot.load_extension("commands.showoff_sunday")
 
 
 keep_alive()
