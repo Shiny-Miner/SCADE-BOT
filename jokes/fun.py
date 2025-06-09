@@ -54,7 +54,12 @@ class Fun(commands.Cog):
         if message.author.bot:
             return
 
-        if self.bot.user in message.mentions and not message.mention_everyone:
+        # Respond if user types `!chat some message`
+        if message.content.lower().startswith("!chat "):
+            user_message = message.content[6:].strip()  # removes "!chat " part
+            if not user_message:
+                await message.channel.send("Say something after `!chat`!")
+                return
             try:
                 witty_response = await generate_witty_reply(message.content)
                 await message.channel.send(witty_response)
