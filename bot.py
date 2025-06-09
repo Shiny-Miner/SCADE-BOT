@@ -15,7 +15,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 @bot.event
 async def on_ready():
     print(f'Logged in as {bot.user} (ID: {bot.user.id})')
-    await bot.change_presence(activity=discord.Game(name="with the world Sir Shiny created!"))
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name="with the world Sir Shiny created!"))
 
 # Load all jokes from the "jokes" folder
 @bot.event
