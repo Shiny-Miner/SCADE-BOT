@@ -32,11 +32,9 @@ class ReactionRoles(commands.Cog):
             guilds = self.bot.guilds
             for message_id, emoji_map in raw_data.items():
                 self.data[message_id] = {}
-                for emoji, role_name in emoji_map.items():
-                    for guild in guilds:
-                        role = discord.utils.get(guild.roles, name=role_name)
-                        if role:
-                            self.data[message_id][emoji] = role.id
+                for emoji, role_id in emoji_map.items():
+                    self.data[message_id][emoji] = role_id
+
             print(f"[ReactionRoles] Loaded {len(self.data)} reaction role messages.")
 
     @commands.command(name="rr_add")
