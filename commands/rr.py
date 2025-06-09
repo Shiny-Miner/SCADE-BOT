@@ -28,7 +28,6 @@ class ReactionRoles(commands.Cog):
     async def cog_load(self):
         print(f"[ReactionRoles] Loading data for messages...")
         raw_data = load_data()
-        guilds = self.bot.guilds
         for message_id, emoji_map in raw_data.items():
             self.data[message_id] = {}
             for emoji, role_id in emoji_map.items():
@@ -38,13 +37,12 @@ class ReactionRoles(commands.Cog):
     @commands.command(name="rr_add")
     @commands.has_permissions(manage_roles=True)
     async def rr_add(self, ctx, message_id: int, emoji: str, role: discord.Role):
-        # Try to convert to PartialEmoji if possible (for custom emoji)
         try:
             partial = await commands.PartialEmojiConverter().convert(ctx, emoji)
             emoji_key = normalize_emoji(partial)
             emoji_to_react = partial
         except commands.PartialEmojiConversionFailure:
-            emoji_key = emoji  # Unicode emoji as string
+            emoji_key = emoji
             emoji_to_react = emoji
 
         msg_id = str(message_id)
@@ -65,16 +63,14 @@ class ReactionRoles(commands.Cog):
     @commands.command(name="rr_remove")
     @commands.has_permissions(manage_roles=True)
     async def rr_remove(self, ctx, message_id: int, emoji: str):
-        """Remove a linked reaction role from a message."""
         msg_id = str(message_id)
 
-        # Try to convert the emoji
         try:
             partial = await commands.PartialEmojiConverter().convert(ctx, emoji)
             emoji_key = normalize_emoji(partial)
             emoji_to_remove = partial
         except commands.PartialEmojiConversionFailure:
-            emoji_key = emoji  # unicode
+            emoji_key = emoji
             emoji_to_remove = emoji
 
         if msg_id not in self.data:
@@ -101,28 +97,22 @@ class ReactionRoles(commands.Cog):
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         if payload.user_id == self.bot.user.id:
-            return  # Ignore bot's own reactions
+            return
 
         msg_id = str(payload.message_id)
         emoji = normalize_emoji(payload.emoji)
 
         if msg_id not in self.data or emoji not in self.data[msg_id]:
-            print(f"[ReactionAdd] No mapping for message {msg_id} and emoji {emoji}")
             return
 
         guild = self.bot.get_guild(payload.guild_id)
-        if not guild:
-            return
         member = guild.get_member(payload.user_id)
         if not member:
             return
 
         role_id = self.data[msg_id][emoji]
         role = guild.get_role(role_id)
-        if role:
-            if role >= guild.me.top_role:
-                print(f"❌ Cannot assign '{role.name}' — it is higher than bot's role.")
-                return
+        if role and role < guild.me.top_role:
             try:
                 await member.add_roles(role, reason="Reaction role")
                 print(f"✅ Gave role '{role.name}' to {member.name}")
@@ -144,10 +134,7 @@ class ReactionRoles(commands.Cog):
 
         role_id = self.data[msg_id][emoji]
         role = guild.get_role(role_id)
-        if role:
-            if role >= guild.me.top_role:
-                print(f"❌ Cannot remove role '{role.name}' — higher than bot's top role.")
-                return
+        if role and role < guild.me.top_role:
             try:
                 await member.remove_roles(role, reason="Reaction role removed")
                 print(f"🔁 Removed role '{role.name}' from {member.name}")
