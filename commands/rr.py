@@ -23,15 +23,20 @@ def normalize_emoji(emoji):
 class ReactionRoles(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.data = {}
-
-    def load_roles_from_json(self):
         raw_data = load_data()
-        for message_id, emoji_map in raw_data.items():
-            self.data[message_id] = {}
-            for emoji, role_id in emoji_map.items():
-                self.data[message_id][emoji] = role_id
-        print(f"[ReactionRoles] Loaded {len(self.data)} reaction role messages.")
+        self.data = {}  # message_id -> emoji -> role_id
+
+        @bot.event
+        async def on_ready():
+            print(f"[ReactionRoles] Loading data for messages...")
+            guilds = self.bot.guilds
+            for message_id, emoji_map in raw_data.items():
+                self.data[message_id] = {}
+                for emoji, role_id in emoji_map.items():
+                    self.data[message_id][emoji] = role_id
+
+            await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name="with the world Sir Shiny created!"))
+            print(f"[ReactionRoles] Loaded {len(self.data)} reaction role messages.")
 
     @commands.command(name="rr_add")
     @commands.has_permissions(manage_roles=True)
