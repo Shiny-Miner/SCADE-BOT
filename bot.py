@@ -28,6 +28,7 @@ async def setup_hook():
     await bot.load_extension("commands.emoji_manager")
     await bot.load_extension("commands.antiabuse")
     await bot.load_extension("commands.rr")
+    await bot.load_extension("commands.ban")
 
 
 keep_alive()
