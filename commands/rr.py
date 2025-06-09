@@ -23,19 +23,17 @@ def normalize_emoji(emoji):
 class ReactionRoles(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        raw_data = load_data()
         self.data = {}  # message_id -> emoji -> role_id
 
-        @bot.event
-        async def on_ready():
-            print(f"[ReactionRoles] Loading data for messages...")
-            guilds = self.bot.guilds
-            for message_id, emoji_map in raw_data.items():
-                self.data[message_id] = {}
-                for emoji, role_id in emoji_map.items():
-                    self.data[message_id][emoji] = role_id
-
-            print(f"[ReactionRoles] Loaded {len(self.data)} reaction role messages.")
+    async def cog_load(self):
+        print(f"[ReactionRoles] Loading data for messages...")
+        raw_data = load_data()
+        guilds = self.bot.guilds
+        for message_id, emoji_map in raw_data.items():
+            self.data[message_id] = {}
+            for emoji, role_id in emoji_map.items():
+                self.data[message_id][emoji] = role_id
+        print(f"[ReactionRoles] Loaded {len(self.data)} reaction role messages.")
 
     @commands.command(name="rr_add")
     @commands.has_permissions(manage_roles=True)
