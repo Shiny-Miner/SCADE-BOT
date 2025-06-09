@@ -20,7 +20,7 @@ class TranslatorCog(commands.Cog):
             return
 
         try:
-            result = translator.translate(text, dest=target_lang)
+            result = await translator.translate(text, dest=target_lang)
             await ctx.reply(f"**Translated ({result.src} → {result.dest}):** {result.text}")
         except Exception as e:
             await ctx.reply(f"⚠️ Translation failed: {e}")
