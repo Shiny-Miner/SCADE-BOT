@@ -25,6 +25,7 @@ async def setup_hook():
     await bot.load_extension("commands.Ah")
     await bot.load_extension("commands.translator")
     await bot.load_extension("commands.av")
+    await bot.load_extension("commands.emoji_manager")
 
 keep_alive()
 
