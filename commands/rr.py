@@ -31,6 +31,13 @@ class ReactionRoles(commands.Cog):
             self.data[message_id] = {}
             for emoji, role_id in emoji_map.items():
                 self.data[message_id][emoji] = role_id
+                try:
+                    channel = discord.utils.get(self.bot.get_all_channels(), lambda c: c.permissions_for(c.guild.me).read_message_history)
+                    if channel:
+                        msg = await channel.fetch_message(int(message_id))
+                        await msg.add_reaction(emoji)
+                except Exception as e:
+                    print(f"[ReactionRoles] Couldn't add emoji '{emoji}' to message {message_id}: {e}")
         print(f"[ReactionRoles] Loaded {len(self.data)} reaction role messages.")
 
     @commands.command(name="rr_add")
