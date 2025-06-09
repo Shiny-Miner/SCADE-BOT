@@ -11,7 +11,7 @@ class AhResponder(commands.Cog):
 
         content = message.content.strip()
         if content in ["ah", "Ah", "AH"]:
-            await message.channel.send("CHOO!")
+            await message.reply("CHOO!")
 
 async def setup(bot):
     await bot.add_cog(AhResponder(bot))
