@@ -18,15 +18,18 @@ class Welcomer(commands.Cog):
     async def on_member_join(self, member):
         print(f"[Welcomer] on_member_join called for {member.name}")  # DEBUG
 
-        channel = self.bot.get_channel(self.welcome_channel_id) if self.welcome_channel_id else None
-        if channel is None:
-            channel = self.get_fallback_channel(member.guild)
+        channel = self.bot.get_channel(self.welcome_channel_id) if self.welcome_channel_id else self.get_fallback_channel(member.guild)
 
         if channel:
             member_count = member.guild.member_count
             embed = discord.Embed(
-                title="👋 Welcome!",
-                description=f"Welcome to the server, {member.mention}! 🎉\nYou're member **#{member_count}**!",
+                title="🌺 Alola!",
+                description=(
+                    f"Alola {member.mention}! We're grateful to have you here.\n\n"
+                    "This server is a town of programmers and hall of active ROM hackers. "
+                    "Please have a comfortable time here, and count on ⁠📜rules to get a better idea of how things work.\n\n"
+                    f"Tha Code Mining Hub just hit **{member_count}** members!"
+                ),
                 color=discord.Color.green()
             )
             embed.set_thumbnail(url=member.display_avatar.url)
@@ -34,13 +37,17 @@ class Welcomer(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
-        print(f"[Welcomer] {member.name} left {member.guild.name}")  # Debug log
+        print(f"[Welcomer] {member.name} left {member.guild.name}")  # DEBUG
 
         channel = self.bot.get_channel(self.welcome_channel_id) or self.get_fallback_channel(member.guild)
         if channel:
+            member_count = member.guild.member_count
             embed = discord.Embed(
-                title="😢 Member Left",
-                description=f"`{member.name}` has left the server.\nWe now have **{member.guild.member_count}** members.",
+                title="👋 Farewell!",
+                description=(
+                    f"Someone named `{member.name}` was here? Ah, they've now left us.\n"
+                    f"Server counts **{member_count}** now."
+                ),
                 color=discord.Color.red()
             )
             await channel.send(embed=embed)
