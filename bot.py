@@ -20,7 +20,7 @@ async def setup_hook():
     await bot.load_extension("jokes.fun")
     await bot.load_extension("commands.locker")  # You can add more like cogs.admin, cogs.games etc.
     await bot.load_extension("commands.welcomer")
-    await bot.load_extension("commands.purge")
+    await bot.load_extension("commands.purge") # All other moderation like ban, kick, mute is here too
     await bot.load_extension("commands.recall")
     await bot.load_extension("commands.Ah")
     await bot.load_extension("commands.translator")
@@ -28,7 +28,6 @@ async def setup_hook():
     await bot.load_extension("commands.emoji_manager")
     await bot.load_extension("commands.antiabuse")
     await bot.load_extension("commands.rr")
-    await bot.load_extension("commands.ban")
 
 
 keep_alive()
