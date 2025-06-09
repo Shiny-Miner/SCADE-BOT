@@ -15,14 +15,20 @@ def save_data(data):
     with open(REACTION_ROLE_FILE, "w") as f:
         json.dump(data, f, indent=4)
 
+def normalize_emoji(emoji):
+    if hasattr(emoji, 'id') and emoji.id:  # custom emoji
+        return f"<:{emoji.name}:{emoji.id}>"
+    return str(emoji)
+
 class ReactionRoles(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         raw_data = load_data()
-        self.data = {}  # Final structure: message_id -> emoji -> role_id
+        self.data = {}  # message_id -> emoji -> role_id
 
         @bot.event
         async def on_ready():
+            print(f"[ReactionRoles] Loading data for messages...")
             guilds = self.bot.guilds
             for message_id, emoji_map in raw_data.items():
                 self.data[message_id] = {}
@@ -31,24 +37,27 @@ class ReactionRoles(commands.Cog):
                         role = discord.utils.get(guild.roles, name=role_name)
                         if role:
                             self.data[message_id][emoji] = role.id
+            print(f"[ReactionRoles] Loaded {len(self.data)} reaction role messages.")
 
     @commands.command(name="rr_add")
     @commands.has_permissions(manage_roles=True)
-    async def rr_add(self, ctx, message_id: int, emoji: str, role: discord.Role):
+    async def rr_add(self, ctx, message_id: int, emoji: discord.PartialEmoji, role: discord.Role):
         """Link a reaction emoji to a role on a specific message."""
         msg_id = str(message_id)
+        emoji_key = normalize_emoji(emoji)
+
         if msg_id not in self.data:
             self.data[msg_id] = {}
-        self.data[msg_id][emoji] = role.id
+        self.data[msg_id][emoji_key] = role.id
         save_data(self.data)
 
         # Try to add the emoji to the message
         try:
-            channel = ctx.channel
-            message = await channel.fetch_message(message_id)
+            message = await ctx.channel.fetch_message(message_id)
             await message.add_reaction(emoji)
-        except Exception:
+        except Exception as e:
             await ctx.send("⚠️ Couldn't add emoji to the message, but mapping was saved.")
+            print(f"[rr_add] Error adding emoji: {e}")
 
         await ctx.send(f"✅ Linked emoji `{emoji}` to role `{role.name}` on message `{message_id}`.")
 
@@ -65,53 +74,74 @@ class ReactionRoles(commands.Cog):
 
         del self.data[msg_id][emoji]
         if not self.data[msg_id]:
-            del self.data[msg_id]  # Clean up empty
+            del self.data[msg_id]
 
         save_data(self.data)
 
-        # Try to remove the reaction from the message
         try:
-            channel = ctx.channel
-            message = await channel.fetch_message(message_id)
+            message = await ctx.channel.fetch_message(message_id)
             await message.clear_reaction(emoji)
-        except Exception:
+        except Exception as e:
             await ctx.send("⚠️ Couldn't remove emoji from the message, but mapping was removed.")
+            print(f"[rr_remove] Error removing emoji: {e}")
 
         await ctx.send(f"✅ Removed reaction role link for `{emoji}` on message `{message_id}`.")
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
-        if str(payload.message_id) not in self.data:
-            return
+        if payload.user_id == self.bot.user.id:
+            return  # Ignore bot's own reactions
 
-        emoji = str(payload.emoji)
-        role_id = self.data[str(payload.message_id)].get(emoji)
-        if not role_id:
+        msg_id = str(payload.message_id)
+        emoji = normalize_emoji(payload.emoji)
+
+        if msg_id not in self.data or emoji not in self.data[msg_id]:
+            print(f"[ReactionAdd] No mapping for message {msg_id} and emoji {emoji}")
             return
 
         guild = self.bot.get_guild(payload.guild_id)
+        if not guild:
+            return
         member = guild.get_member(payload.user_id)
-        if member:
-            role = guild.get_role(role_id)
-            if role:
+        if not member:
+            return
+
+        role_id = self.data[msg_id][emoji]
+        role = guild.get_role(role_id)
+        if role:
+            if role >= guild.me.top_role:
+                print(f"❌ Cannot assign '{role.name}' — it is higher than bot's role.")
+                return
+            try:
                 await member.add_roles(role, reason="Reaction role")
+                print(f"✅ Gave role '{role.name}' to {member.name}")
+            except discord.Forbidden:
+                print(f"❌ Missing permissions to assign role '{role.name}'.")
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent):
-        if str(payload.message_id) not in self.data:
-            return
+        msg_id = str(payload.message_id)
+        emoji = normalize_emoji(payload.emoji)
 
-        emoji = str(payload.emoji)
-        role_id = self.data[str(payload.message_id)].get(emoji)
-        if not role_id:
+        if msg_id not in self.data or emoji not in self.data[msg_id]:
             return
 
         guild = self.bot.get_guild(payload.guild_id)
         member = guild.get_member(payload.user_id)
-        if member:
-            role = guild.get_role(role_id)
-            if role:
+        if not member:
+            return
+
+        role_id = self.data[msg_id][emoji]
+        role = guild.get_role(role_id)
+        if role:
+            if role >= guild.me.top_role:
+                print(f"❌ Cannot remove role '{role.name}' — higher than bot's top role.")
+                return
+            try:
                 await member.remove_roles(role, reason="Reaction role removed")
+                print(f"🔁 Removed role '{role.name}' from {member.name}")
+            except discord.Forbidden:
+                print(f"❌ Missing permissions to remove role '{role.name}'.")
 
 async def setup(bot):
     await bot.add_cog(ReactionRoles(bot))
