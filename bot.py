@@ -24,6 +24,7 @@ async def setup_hook():
     await bot.load_extension("commands.recall")
     await bot.load_extension("commands.Ah")
     await bot.load_extension("commands.translator")
+    await bot.load_extension("commands.av")
 
 keep_alive()
 
