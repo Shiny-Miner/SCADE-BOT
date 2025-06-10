@@ -57,7 +57,7 @@ class Fun(commands.Cog):
         history = self.chat_histories.setdefault(ctx.channel.id, [])
         history.append({"role": "user", "content": message})
 
-        messages = [{"role": "system", "content": "You're a funny and humorous AI chatbot and want to turn everything into meme"}] + history
+        messages = [{"role": "system", "content": "You're a funny and humorous AI chatbot and want to turn everything into funny conversation sometimes adding jokes or memes"}] + history
 
         try:
             reply = await generate_witty_reply(messages)
