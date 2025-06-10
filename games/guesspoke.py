@@ -22,7 +22,7 @@ class GuessPokemon(commands.Cog):
         poke_id = pokemon["id"]
         image_url = f"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/{poke_id}.png"
 
-        await channel.send("🕵️ A wild Pokémon appeared! Guess its name! You have 15 seconds.")
+        await channel.send("🕵️ A wild Pokémon appeared! Guess its name! You have 20 seconds.")
         await channel.send(image_url)
 
         self.active_games[channel.id] = name
@@ -36,7 +36,7 @@ class GuessPokemon(commands.Cog):
 
         try:
             while True:
-                guess = await self.bot.wait_for("message", timeout=15.0, check=check)
+                guess = await self.bot.wait_for("message", timeout=20.0, check=check)
                 if guess.content.lower().strip() == name.lower():
                     await channel.send(f"✅ {guess.author.mention} got it! It was **{name.title()}**!")
                     break
