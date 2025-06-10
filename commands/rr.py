@@ -53,13 +53,12 @@ class ReactionRoles(commands.Cog):
     @commands.command(name="rr_add")
     @commands.has_permissions(manage_roles=True)
     async def rr_add(self, ctx, message_id: int, emoji: str, role: discord.Role):
-        # Try to convert to PartialEmoji if possible (for custom emoji)
         try:
             partial = await commands.PartialEmojiConverter().convert(ctx, emoji)
             emoji_key = normalize_emoji(partial)
             emoji_to_react = partial
         except commands.PartialEmojiConversionFailure:
-            emoji_key = emoji  # Unicode emoji as string
+            emoji_key = emoji
             emoji_to_react = emoji
 
         msg_id = str(message_id)
@@ -68,12 +67,24 @@ class ReactionRoles(commands.Cog):
         self.data[msg_id][emoji_key] = role.id
         save_data(self.data)
 
-        try:
-            message = await ctx.channel.fetch_message(message_id)
-            await message.add_reaction(emoji_to_react)
-        except Exception as e:
-            await ctx.send("⚠️ Couldn't add emoji to the message, but mapping was saved.")
-            print(f"[rr_add] Error adding emoji: {e}")
+        message = None
+        for channel in ctx.guild.text_channels:
+            if not channel.permissions_for(ctx.guild.me).read_message_history:
+                continue
+            try:
+                message = await channel.fetch_message(message_id)
+                break
+            except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+                continue
+
+        if message:
+            try:
+                await message.add_reaction(emoji_to_react)
+            except Exception as e:
+                await ctx.send("⚠️ Couldn't add emoji to the message, but mapping was saved.")
+                print(f"[rr_add] Error adding emoji: {e}")
+        else:
+            await ctx.send("⚠️ Couldn't find the message to add the emoji, but mapping was saved.")
 
         await ctx.send(f"✅ Linked emoji `{emoji_key}` to role `{role.name}` on message `{message_id}`.")
 
