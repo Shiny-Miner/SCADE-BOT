@@ -12,24 +12,21 @@ headers = {
     "Content-Type": "application/json"
 }
 
-async def generate_witty_reply(user_message):
+async def generate_witty_reply(messages):
     async with aiohttp.ClientSession() as session:
         try:
             payload = {
                 "model": GROQ_MODEL,
-                "messages": [
-                    {"role": "system", "content": "You're a witty and humorous AI assistant."},
-                    {"role": "user", "content": user_message}
-                ],
-                "temperature": 0.8,
-                "max_tokens": 100
+                "messages": messages,
+                "temperature": 1.3,
+                "max_tokens": 1000
             }
 
             async with session.post(GROQ_API_URL, headers=headers, json=payload) as response:
                 if response.status != 200:
                     text = await response.text()
                     print(f"GROQ Error {response.status}: {text}")
-                    return "Sorry, I forgot my punchline. 🤐"
+                    return "Sorry, I forgot my punchline. 🪐"
 
                 data = await response.json()
                 return data["choices"][0]["message"]["content"].strip()
@@ -48,6 +45,7 @@ class Fun(commands.Cog):
             "Parallel lines have so much in common… it’s a shame they’ll never meet.",
             "Why do Java developers wear glasses? Because they don't see sharp.",
         ]
+        self.chat_histories = {}  # Store per-channel histories
 
     @commands.command(name="chat")
     async def chat_command(self, ctx, *, message: str = None):
@@ -55,12 +53,25 @@ class Fun(commands.Cog):
         if not message:
             await ctx.send("Say something after `!chat`!")
             return
+
+        history = self.chat_histories.setdefault(ctx.channel.id, [])
+        history.append({"role": "user", "content": message})
+
+        messages = [{"role": "system", "content": "You're a witty and humorous AI assistant."}] + history
+
         try:
-            reply = await generate_witty_reply(message)
+            reply = await generate_witty_reply(messages)
+            history.append({"role": "assistant", "content": reply})
             await ctx.send(reply)
         except Exception as e:
             print(f"GROQ API error: {e}")
-            await ctx.send("Oops! I tripped over a wire trying to think of something witty. 🤖")
+            await ctx.send("Oops! I tripped over a wire trying to think of something witty. 🧠")
+
+    @commands.command(name="resetchat")
+    async def reset_chat(self, ctx):
+        self.chat_histories.pop(ctx.channel.id, None)
+        await ctx.send("Chat history has been reset. Let's start fresh!")
+
 
 async def setup(bot):
     await bot.add_cog(Fun(bot))
