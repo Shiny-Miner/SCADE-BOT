@@ -19,7 +19,7 @@ async def generate_witty_reply(messages):
                 "model": GROQ_MODEL,
                 "messages": messages,
                 "temperature": 1.3,
-                "max_tokens": 1000
+                "max_tokens": 500
             }
 
             async with session.post(GROQ_API_URL, headers=headers, json=payload) as response:
@@ -57,7 +57,7 @@ class Fun(commands.Cog):
         history = self.chat_histories.setdefault(ctx.channel.id, [])
         history.append({"role": "user", "content": message})
 
-        messages = [{"role": "system", "content": "You're a witty and humorous AI assistant."}] + history
+        messages = [{"role": "system", "content": "You're a funny and humorous AI chatbot and want to turn everything into joke"}] + history
 
         try:
             reply = await generate_witty_reply(messages)
