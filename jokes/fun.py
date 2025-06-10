@@ -18,8 +18,8 @@ async def generate_witty_reply(messages):
             payload = {
                 "model": GROQ_MODEL,
                 "messages": messages,
-                "temperature": 2.0,
-                "max_tokens": 400
+                "temperature": 1.3,
+                "max_tokens": 300
             }
 
             async with session.post(GROQ_API_URL, headers=headers, json=payload) as response:
