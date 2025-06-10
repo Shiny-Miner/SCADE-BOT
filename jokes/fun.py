@@ -2,13 +2,14 @@ from discord.ext import commands
 import discord
 import random
 import aiohttp
+import os
 
-GROQ_API_KEY = "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"
-GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
+OPENAI_MODEL = "gpt-4o"  # You can also use "gpt-4", "gpt-3.5-turbo", etc.
 
 headers = {
-    "Authorization": f"Bearer {GROQ_API_KEY}",
+    "Authorization": f"Bearer {OPENAI_API_KEY}",
     "Content-Type": "application/json"
 }
 
@@ -16,23 +17,23 @@ async def generate_witty_reply(messages):
     async with aiohttp.ClientSession() as session:
         try:
             payload = {
-                "model": GROQ_MODEL,
+                "model": OPENAI_MODEL,
                 "messages": messages,
                 "temperature": 1.3,
                 "max_tokens": 300
             }
 
-            async with session.post(GROQ_API_URL, headers=headers, json=payload) as response:
+            async with session.post(OPENAI_API_URL, headers=headers, json=payload) as response:
                 if response.status != 200:
                     text = await response.text()
-                    print(f"GROQ Error {response.status}: {text}")
+                    print(f"OpenAI Error {response.status}: {text}")
                     return "Sorry, I forgot my punchline. 🪐"
 
                 data = await response.json()
                 return data["choices"][0]["message"]["content"].strip()
 
         except Exception as e:
-            print(f"GROQ API error: {e}")
+            print(f"OpenAI API error: {e}")
             return "Oops! I tripped over a wire again."
 
 
@@ -64,7 +65,7 @@ class Fun(commands.Cog):
             history.append({"role": "assistant", "content": reply})
             await ctx.send(reply)
         except Exception as e:
-            print(f"GROQ API error: {e}")
+            print(f"OpenAI API error: {e}")
             await ctx.send("Oops! I tripped over a wire trying to think of something witty. 🧠")
 
     @commands.command(name="resetchat")
