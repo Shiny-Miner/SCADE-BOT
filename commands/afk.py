@@ -17,7 +17,7 @@ class AFK(commands.Cog):
             return
 
         # Clear AFK if user was AFK
-        if message.author.id in self.afk_users:
+        if message.author.id in self.afk_users and not message.content.startswith("!afk"):
             del self.afk_users[message.author.id]
             try:
                 await message.channel.send(f"👋 Welcome back, {message.author.mention}. I removed your AFK status.", delete_after=5)
