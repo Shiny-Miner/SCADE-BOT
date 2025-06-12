@@ -71,6 +71,17 @@ class GuessPokemon(commands.Cog):
             return
         await self.spawn_pokemon_game(ctx.channel)
 
+    @commands.command(name="hint")
+    async def give_hint(self, ctx):
+        """Gives a hint for the current Pokémon"""
+        if ctx.channel.id not in self.active_games:
+            await ctx.send("❌ No active Pokémon to guess right now!")
+            return
+
+        name = self.active_games[ctx.channel.id]
+        hint = f"The name has {len(name)} letters. Starts with **{name[0].upper()}** and ends with **{name[-1].upper()}**."
+        await ctx.send(f"💡 Hint: {hint}")
+
 
 async def setup(bot):
     # Load Pokémon names and IDs at load time (not in on_ready)
