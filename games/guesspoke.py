@@ -4,6 +4,7 @@ import random
 import aiohttp
 import asyncio
 import re
+from db import db  # Import your shared Database instance
 
 class GuessPokemon(commands.Cog):
     def __init__(self, bot, pokemon_list):
@@ -13,7 +14,6 @@ class GuessPokemon(commands.Cog):
         self.active_games = {}    # {channel_id: pokemon_name}
 
     def is_guess_valid(self, message):
-        """Check if message could be a guess (e.g., not an emoji or link)"""
         return re.match(r"^[a-zA-Z\s\-'.]+$", message.content.strip())
 
     async def spawn_pokemon_game(self, channel):
@@ -39,9 +39,10 @@ class GuessPokemon(commands.Cog):
                 guess = await self.bot.wait_for("message", timeout=20.0, check=check)
                 if guess.content.lower().strip() == name.lower():
                     await channel.send(f"✅ {guess.author.mention} got it! It was **{name.title()}**!")
+                    await db.add_points(guess.author.id, 1)
                     break
                 else:
-                    await channel.send(f"❌ Nope, try again!")
+                    await channel.send("❌ Nope, try again!")
         except asyncio.TimeoutError:
             await channel.send(f"⏰ Time's up! The Pokémon was **{name.title()}**.")
         finally:
@@ -55,17 +56,12 @@ class GuessPokemon(commands.Cog):
         gid = message.guild.id
         self.message_counts[gid] = self.message_counts.get(gid, 0) + 1
 
-        # Don't trigger inside already-active guess channel
-        if (
-            self.message_counts[gid] >= 100
-            and message.channel.id not in self.active_games
-        ):
+        if self.message_counts[gid] >= 100 and message.channel.id not in self.active_games:
             self.message_counts[gid] = 0
             await self.spawn_pokemon_game(message.channel)
 
     @commands.command(name="guesspoke")
     async def guess_pokemon_command(self, ctx):
-        """Manually start a guess-the-Pokémon game"""
         if ctx.channel.id in self.active_games:
             await ctx.send("⚠️ A Pokémon is already active here!")
             return
@@ -73,7 +69,6 @@ class GuessPokemon(commands.Cog):
 
     @commands.command(name="hint")
     async def give_hint(self, ctx):
-        """Gives a hint that displays all underscores even for hidden adjacent letters."""
         if ctx.channel.id not in self.active_games:
             await ctx.send("❌ No active Pokémon to guess right now!")
             return
@@ -81,33 +76,31 @@ class GuessPokemon(commands.Cog):
         name = self.active_games[ctx.channel.id].lower()
         letter_indices = [i for i, c in enumerate(name) if c.isalpha()]
 
-        # Reveal logic
         revealed = set()
         if letter_indices:
-            revealed.add(letter_indices[0])  # First letter
-            revealed.add(letter_indices[-1])  # Last letter
-
+            revealed.add(letter_indices[0])
+            revealed.add(letter_indices[-1])
             inner = letter_indices[1:-1]
             reveal_count = min(2, len(inner))
             revealed.update(random.sample(inner, k=reveal_count))
 
-        # Build the display
         display = []
         for i, c in enumerate(name):
             if c.isalpha():
                 display.append(c.upper() if i in revealed else "_")
             else:
-                display.append(c)  # Preserve hyphen, apostrophe, etc.
+                display.append(c)
 
-        # Use THIN SPACE (U+2009) to avoid Discord collapsing characters visually
         hint = "\u2009".join(display)
+        await ctx.send(f"💡 Hint: `{hint}`")
 
-        await ctx.send(f"💡 Hint: `{hint}`")  # Backticks force Discord to preserve spacing
-
-
+    @commands.command(name="points")
+    async def check_points(self, ctx):
+        points = await db.get_points(ctx.author.id)
+        await ctx.send(f"🏆 {ctx.author.display_name}, you have **{points}** points!")
 
 async def setup(bot):
-    # Load Pokémon names and IDs at load time (not in on_ready)
+    await db.connect()
     url = "https://pokeapi.co/api/v2/pokemon?limit=1025"
     pokemon_list = []
 
