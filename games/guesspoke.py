@@ -4,10 +4,34 @@ import random
 import aiohttp
 import asyncio
 import re
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from db import db  # Import your shared Database instance
+import asyncpg
+
+# ✅ Inline DB logic (was db.py)
+DB_URL = "https://cmvmnmfoutodoskumcbl.supabase.co"  # Replace with your full Supabase PostgreSQL DSN
+
+class Database:
+    def __init__(self):
+        self.pool = None
+
+    async def connect(self):
+        self.pool = await asyncpg.create_pool(dsn=DB_URL)
+
+    async def add_points(self, user_id: int, amount: int = 1):
+        async with self.pool.acquire() as conn:
+            await conn.execute("""
+                INSERT INTO user_points (user_id, points)
+                VALUES ($1, $2)
+                ON CONFLICT (user_id)
+                DO UPDATE SET points = user_points.points + $2;
+            """, user_id, amount)
+
+    async def get_points(self, user_id: int) -> int:
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow("SELECT points FROM user_points WHERE user_id = $1", user_id)
+            return row["points"] if row else 0
+
+db = Database()
+
 
 class GuessPokemon(commands.Cog):
     def __init__(self, bot, pokemon_list):
@@ -45,9 +69,8 @@ class GuessPokemon(commands.Cog):
                     async with aiohttp.ClientSession() as session:
                         async with session.get(f"https://pokeapi.co/api/v2/pokemon/{name.lower()}") as resp:
                             data = await resp.json()
-                            base_exp = data.get("base_experience", 50)  # fallback if not present
+                            base_exp = data.get("base_experience", 50)
 
-                    # Award EXP as points
                     await db.add_points(guess.author.id, base_exp)
                     await channel.send(f"✅ {guess.author.mention} got it! It was **{name.title()}**!")
                     await channel.send(f"💰 You earned **{base_exp} EXP** for guessing {name.title()}!")
@@ -109,6 +132,7 @@ class GuessPokemon(commands.Cog):
     async def check_points(self, ctx):
         points = await db.get_points(ctx.author.id)
         await ctx.send(f"🏆 {ctx.author.display_name}, you have **{points}** points!")
+
 
 async def setup(bot):
     await db.connect()
