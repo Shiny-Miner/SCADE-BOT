@@ -3,7 +3,7 @@ import discord
 import random
 import aiohttp
 
-GROQ_API_KEY = "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"
+GROQ_API_KEY = "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"
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 
