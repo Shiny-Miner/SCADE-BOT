@@ -73,38 +73,37 @@ class GuessPokemon(commands.Cog):
 
     @commands.command(name="hint")
     async def give_hint(self, ctx):
-        """Gives a properly formatted hint for the current Pokémon"""
+        """Gives a hint that displays all underscores even for hidden adjacent letters."""
         if ctx.channel.id not in self.active_games:
             await ctx.send("❌ No active Pokémon to guess right now!")
             return
 
         name = self.active_games[ctx.channel.id].lower()
-
-        # Indices of alphabet characters
         letter_indices = [i for i, c in enumerate(name) if c.isalpha()]
-        
-        # Always reveal first & last letter, plus up to 2 random inner letters
-        if len(letter_indices) >= 3:
-            inner_indices = letter_indices[1:-1]
-            reveal_count = min(2, len(inner_indices))
-            revealed_inner = random.sample(inner_indices, k=reveal_count)
-        else:
-            revealed_inner = []
 
-        revealed_set = set([letter_indices[0], letter_indices[-1]] + revealed_inner)
+        # Reveal logic
+        revealed = set()
+        if letter_indices:
+            revealed.add(letter_indices[0])  # First letter
+            revealed.add(letter_indices[-1])  # Last letter
 
+            inner = letter_indices[1:-1]
+            reveal_count = min(2, len(inner))
+            revealed.update(random.sample(inner, k=reveal_count))
+
+        # Build the display
         display = []
         for i, c in enumerate(name):
-            if not c.isalpha():
-                # Keep punctuation and spaces as-is
-                display.append(c)
-            elif i in revealed_set:
-                display.append(c.upper())
+            if c.isalpha():
+                display.append(c.upper() if i in revealed else "_")
             else:
-                display.append("_")
+                display.append(c)  # Preserve hyphen, apostrophe, etc.
 
-        hint = " ".join(display)
-        await ctx.send(f"💡 Hint: The name is **{hint}**")
+        # Use THIN SPACE (U+2009) to avoid Discord collapsing characters visually
+        hint = "\u2009".join(display)
+
+        await ctx.send(f"💡 Hint: `{hint}`")  # Backticks force Discord to preserve spacing
+
 
 
 async def setup(bot):
