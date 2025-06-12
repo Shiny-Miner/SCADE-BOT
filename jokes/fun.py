@@ -2,6 +2,7 @@ from discord.ext import commands
 import discord
 import random
 import aiohttp
+import os
 
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
