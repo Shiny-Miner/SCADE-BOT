@@ -73,28 +73,32 @@ class GuessPokemon(commands.Cog):
 
     @commands.command(name="hint")
     async def give_hint(self, ctx):
-        """Gives a smart hint for the current Pokémon"""
+        """Gives a cleanly formatted hint for the current Pokémon"""
         if ctx.channel.id not in self.active_games:
             await ctx.send("❌ No active Pokémon to guess right now!")
             return
 
-        name = self.active_games[ctx.channel.id]
-        name = name.lower()
+        name = self.active_games[ctx.channel.id].lower()
 
-        # Choose 1–2 random inner letters to reveal (not first or last)
-        if len(name) > 3:
-            indices = list(range(1, len(name) - 1))
-            reveal_count = min(2, len(indices))
-            revealed_indices = random.sample(indices, k=reveal_count)
-        else:
-            revealed_indices = []
+        # Always reveal first and last letters, and randomly 1-2 inner letters
+        inner_indices = list(range(1, len(name) - 1))
+        reveal_count = min(2, len(inner_indices))
+        revealed_indices = random.sample(inner_indices, k=reveal_count) if inner_indices else []
 
-        # Always reveal first and last letter
-        revealed = [
-            c.upper() if i == 0 or i == len(name) - 1 or i in revealed_indices else "_"
-            for i, c in enumerate(name)
-        ]
-        hint = " ".join(revealed)
+        # Prepare the formatted hint
+        display = []
+        for i, c in enumerate(name):
+            if i == 0 or i == len(name) - 1 or i in revealed_indices:
+                display.append(c.upper())
+            else:
+                # Add underscore, but with spacing logic
+                if i > 0 and display[-1] != "_":
+                    display.append(" _")
+                else:
+                    display.append("_")
+
+        # Join with space between letters for visibility
+        hint = " ".join(display)
         await ctx.send(f"💡 Hint: The name is **{hint}**")
 
 
