@@ -7,7 +7,7 @@ import re
 import asyncpg
 
 # ✅ Inline DB logic (was db.py)
-DB_URL = "https://cmvmnmfoutodoskumcbl.supabase.co"  # Replace with your full Supabase PostgreSQL DSN
+DB_URL = "postgresql://postgres:Falansh@123@db.cmvmnmfoutodoskumcbl.supabase.co:5432/postgres"  # Replace with your full Supabase PostgreSQL DSN
 
 class Database:
     def __init__(self):
