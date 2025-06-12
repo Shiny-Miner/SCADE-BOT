@@ -4,34 +4,6 @@ import random
 import aiohttp
 import asyncio
 import re
-import asyncpg
-
-# ✅ Inline DB logic (was db.py)
-DB_URL = "postgresql://postgres:Falansh%40123@db.cmvmnmfoutodoskumcbl.supabase.co:5432/postgres"  # Replace with your full Supabase PostgreSQL DSN
-
-class Database:
-    def __init__(self):
-        self.pool = None
-
-    async def connect(self):
-        self.pool = await asyncpg.create_pool(dsn=DB_URL)
-
-    async def add_points(self, user_id: int, amount: int = 1):
-        async with self.pool.acquire() as conn:
-            await conn.execute("""
-                INSERT INTO user_points (user_id, points)
-                VALUES ($1, $2)
-                ON CONFLICT (user_id)
-                DO UPDATE SET points = user_points.points + $2;
-            """, user_id, amount)
-
-    async def get_points(self, user_id: int) -> int:
-        async with self.pool.acquire() as conn:
-            row = await conn.fetchrow("SELECT points FROM user_points WHERE user_id = $1", user_id)
-            return row["points"] if row else 0
-
-db = Database()
-
 
 class GuessPokemon(commands.Cog):
     def __init__(self, bot, pokemon_list):
@@ -41,6 +13,7 @@ class GuessPokemon(commands.Cog):
         self.active_games = {}    # {channel_id: pokemon_name}
 
     def is_guess_valid(self, message):
+        """Check if message could be a guess (e.g., not an emoji or link)"""
         return re.match(r"^[a-zA-Z\s\-'.]+$", message.content.strip())
 
     async def spawn_pokemon_game(self, channel):
@@ -65,18 +38,10 @@ class GuessPokemon(commands.Cog):
             while True:
                 guess = await self.bot.wait_for("message", timeout=20.0, check=check)
                 if guess.content.lower().strip() == name.lower():
-                    # Fetch base experience from PokeAPI
-                    async with aiohttp.ClientSession() as session:
-                        async with session.get(f"https://pokeapi.co/api/v2/pokemon/{name.lower()}") as resp:
-                            data = await resp.json()
-                            base_exp = data.get("base_experience", 50)
-
-                    await db.add_points(guess.author.id, base_exp)
                     await channel.send(f"✅ {guess.author.mention} got it! It was **{name.title()}**!")
-                    await channel.send(f"💰 You earned **{base_exp} EXP** for guessing {name.title()}!")
                     break
                 else:
-                    await channel.send("❌ Nope, try again!")
+                    await channel.send(f"❌ Nope, try again!")
         except asyncio.TimeoutError:
             await channel.send(f"⏰ Time's up! The Pokémon was **{name.title()}**.")
         finally:
@@ -90,12 +55,17 @@ class GuessPokemon(commands.Cog):
         gid = message.guild.id
         self.message_counts[gid] = self.message_counts.get(gid, 0) + 1
 
-        if self.message_counts[gid] >= 100 and message.channel.id not in self.active_games:
+        # Don't trigger inside already-active guess channel
+        if (
+            self.message_counts[gid] >= 100
+            and message.channel.id not in self.active_games
+        ):
             self.message_counts[gid] = 0
             await self.spawn_pokemon_game(message.channel)
 
     @commands.command(name="guesspoke")
     async def guess_pokemon_command(self, ctx):
+        """Manually start a guess-the-Pokémon game"""
         if ctx.channel.id in self.active_games:
             await ctx.send("⚠️ A Pokémon is already active here!")
             return
@@ -103,6 +73,7 @@ class GuessPokemon(commands.Cog):
 
     @commands.command(name="hint")
     async def give_hint(self, ctx):
+        """Gives a hint that displays all underscores even for hidden adjacent letters."""
         if ctx.channel.id not in self.active_games:
             await ctx.send("❌ No active Pokémon to guess right now!")
             return
@@ -110,32 +81,33 @@ class GuessPokemon(commands.Cog):
         name = self.active_games[ctx.channel.id].lower()
         letter_indices = [i for i, c in enumerate(name) if c.isalpha()]
 
+        # Reveal logic
         revealed = set()
         if letter_indices:
-            revealed.add(letter_indices[0])
-            revealed.add(letter_indices[-1])
+            revealed.add(letter_indices[0])  # First letter
+            revealed.add(letter_indices[-1])  # Last letter
+
             inner = letter_indices[1:-1]
             reveal_count = min(2, len(inner))
             revealed.update(random.sample(inner, k=reveal_count))
 
+        # Build the display
         display = []
         for i, c in enumerate(name):
             if c.isalpha():
                 display.append(c.upper() if i in revealed else "_")
             else:
-                display.append(c)
+                display.append(c)  # Preserve hyphen, apostrophe, etc.
 
+        # Use THIN SPACE (U+2009) to avoid Discord collapsing characters visually
         hint = "\u2009".join(display)
-        await ctx.send(f"💡 Hint: `{hint}`")
 
-    @commands.command(name="points")
-    async def check_points(self, ctx):
-        points = await db.get_points(ctx.author.id)
-        await ctx.send(f"🏆 {ctx.author.display_name}, you have **{points}** points!")
+        await ctx.send(f"💡 Hint: `{hint}`")  # Backticks force Discord to preserve spacing
+
 
 
 async def setup(bot):
-    await db.connect()
+    # Load Pokémon names and IDs at load time (not in on_ready)
     url = "https://pokeapi.co/api/v2/pokemon?limit=1025"
     pokemon_list = []
 
