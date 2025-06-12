@@ -73,14 +73,29 @@ class GuessPokemon(commands.Cog):
 
     @commands.command(name="hint")
     async def give_hint(self, ctx):
-        """Gives a hint for the current Pokémon"""
+        """Gives a smart hint for the current Pokémon"""
         if ctx.channel.id not in self.active_games:
             await ctx.send("❌ No active Pokémon to guess right now!")
             return
 
         name = self.active_games[ctx.channel.id]
-        hint = f"The name has {len(name)} letters. Starts with **{name[0].upper()}** and ends with **{name[-1].upper()}**."
-        await ctx.send(f"💡 Hint: {hint}")
+        name = name.lower()
+
+        # Choose 1–2 random inner letters to reveal (not first or last)
+        if len(name) > 3:
+            indices = list(range(1, len(name) - 1))
+            reveal_count = min(2, len(indices))
+            revealed_indices = random.sample(indices, k=reveal_count)
+        else:
+            revealed_indices = []
+
+        # Always reveal first and last letter
+        revealed = [
+            c.upper() if i == 0 or i == len(name) - 1 or i in revealed_indices else "_"
+            for i, c in enumerate(name)
+        ]
+        hint = " ".join(revealed)
+        await ctx.send(f"💡 Hint: The name is **{hint}**")
 
 
 async def setup(bot):
