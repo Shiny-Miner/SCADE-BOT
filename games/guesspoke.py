@@ -4,7 +4,8 @@ import random
 import aiohttp
 import asyncio
 import re
-from ..db import db  # Import your shared Database instance
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from db import db  # Import your shared Database instance
 
 class GuessPokemon(commands.Cog):
     def __init__(self, bot, pokemon_list):
