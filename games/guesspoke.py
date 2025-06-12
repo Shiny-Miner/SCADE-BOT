@@ -38,8 +38,16 @@ class GuessPokemon(commands.Cog):
             while True:
                 guess = await self.bot.wait_for("message", timeout=20.0, check=check)
                 if guess.content.lower().strip() == name.lower():
+                    # Fetch base experience from PokeAPI
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(f"https://pokeapi.co/api/v2/pokemon/{name.lower()}") as resp:
+                            data = await resp.json()
+                            base_exp = data.get("base_experience", 50)  # fallback if not present
+
+                    # Award EXP as points
+                    await db.add_points(guess.author.id, base_exp)
                     await channel.send(f"✅ {guess.author.mention} got it! It was **{name.title()}**!")
-                    await db.add_points(guess.author.id, 1)
+                    await channel.send(f"💰 You earned **{base_exp} EXP** for guessing {name.title()}!")
                     break
                 else:
                     await channel.send("❌ Nope, try again!")
