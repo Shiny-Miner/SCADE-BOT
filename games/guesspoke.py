@@ -73,31 +73,36 @@ class GuessPokemon(commands.Cog):
 
     @commands.command(name="hint")
     async def give_hint(self, ctx):
-        """Gives a cleanly formatted hint for the current Pokémon"""
+        """Gives a properly formatted hint for the current Pokémon"""
         if ctx.channel.id not in self.active_games:
             await ctx.send("❌ No active Pokémon to guess right now!")
             return
 
         name = self.active_games[ctx.channel.id].lower()
 
-        # Always reveal first and last letters, and randomly 1-2 inner letters
-        inner_indices = list(range(1, len(name) - 1))
-        reveal_count = min(2, len(inner_indices))
-        revealed_indices = random.sample(inner_indices, k=reveal_count) if inner_indices else []
+        # Indices of alphabet characters
+        letter_indices = [i for i, c in enumerate(name) if c.isalpha()]
+        
+        # Always reveal first & last letter, plus up to 2 random inner letters
+        if len(letter_indices) >= 3:
+            inner_indices = letter_indices[1:-1]
+            reveal_count = min(2, len(inner_indices))
+            revealed_inner = random.sample(inner_indices, k=reveal_count)
+        else:
+            revealed_inner = []
 
-        # Prepare the formatted hint
+        revealed_set = set([letter_indices[0], letter_indices[-1]] + revealed_inner)
+
         display = []
         for i, c in enumerate(name):
-            if i == 0 or i == len(name) - 1 or i in revealed_indices:
+            if not c.isalpha():
+                # Keep punctuation and spaces as-is
+                display.append(c)
+            elif i in revealed_set:
                 display.append(c.upper())
             else:
-                # Add underscore, but with spacing logic
-                if i > 0 and display[-1] != "_":
-                    display.append(" _")
-                else:
-                    display.append("_")
+                display.append("_")
 
-        # Join with space between letters for visibility
         hint = " ".join(display)
         await ctx.send(f"💡 Hint: The name is **{hint}**")
 
