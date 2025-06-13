@@ -65,7 +65,8 @@ class ChatSummaryFAQ(commands.Cog):
         context_msgs = messages[start:end]
         summary = []
         for msg in context_msgs:
-            summary.append(f"**{msg.author.display_name}:** {msg.content[:200]}")
+            safe_content = msg.clean_content[:200]  # Safe from pings
+            summary.append(f"**{msg.author.display_name}:** {safe_content}")
         return "\n".join(summary)
 
 
@@ -83,7 +84,7 @@ class ChatSummaryFAQ(commands.Cog):
 
                 await message.reply(
                     f"🔁 Found a similar conversation in {channel.mention}:\n\n{summary}\n\n📍 [Jump]({match[index].jump_url})",
-                    mention_author=False
+                    mention_author=False, allowed_mentions=discord.AllowedMentions.none()
                 )
             else:
                 await message.reply("❌ No similar messages found.", mention_author=False)
