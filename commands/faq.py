@@ -21,7 +21,7 @@ class ChatSummaryFAQ(commands.Cog):
         common = current_counter & past_counter
         return sum(common.values())
 
-    async def search_all_channels(self, guild, current_question):
+    async def search_all_channels(self, guild, current_question, before):
         best_score = 0
         best_match = None
         best_index = -1
@@ -36,7 +36,7 @@ class ChatSummaryFAQ(commands.Cog):
 
             try:
                 history = []
-                async for msg in channel.history(limit=MAX_MESSAGES):
+                async for msg in channel.history(limit=MAX_MESSAGES, before=before):
                     if not msg.author.bot:
                         history.append(msg)
                 await asyncio.sleep(0.7)  # ✅ delay to avoid rate-limiting
@@ -72,7 +72,7 @@ class ChatSummaryFAQ(commands.Cog):
 
     async def handle_question(self, message, question_text):
         try:
-            match, index, score, channel = await self.search_all_channels(message.guild, question_text)
+            match, index, score, channel = await self.search_all_channels(message.guild, question_text, before=message.created_at)
             print(f"[DEBUG] Best score: {score}, Channel: {channel}, Index: {index}")
 
             if score >= 2 and match and channel:
