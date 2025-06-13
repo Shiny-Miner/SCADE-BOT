@@ -6,6 +6,7 @@ import asyncio
 
 MAX_MESSAGES = 2000  # Messages per channel to scan
 STOP_WORDS = {"the", "and", "or", "is", "a", "an", "to", "in", "of", "on", "at", "for", "it", "as", "be", "with", "this", "that", "are", "was", "were", "has", "have", "you", "your", "i", "my"}
+MAX_DISCORD_MSG_LENGTH = 1900  # Leave room for header and footer
 
 def tokenize(text):
     return [word.lower() for word in re.findall(r'\b\w+\b', text) if word.lower() not in STOP_WORDS]
@@ -67,7 +68,6 @@ class ChatSummaryFAQ(commands.Cog):
             summary.append(f"**{msg.author.display_name}:** {msg.content[:200]}")
         return "\n".join(summary)
 
-    MAX_DISCORD_MSG_LENGTH = 1900  # Leave room for header and footer
 
     async def handle_question(self, message, question_text):
         try:
