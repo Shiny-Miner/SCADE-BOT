@@ -57,7 +57,7 @@ class ChatSummaryFAQ(commands.Cog):
             match, index, score, channel = await self.search_all_channels(message.guild, question_text)
             print(f"[DEBUG] Best score: {score}, Channel: {channel}, Index: {index}")
 
-            if score >= 4 and match and channel:
+            if score >= 2 and match and channel:
                 summary = self.make_summary(match, index)
 
                 # Truncate if too long
