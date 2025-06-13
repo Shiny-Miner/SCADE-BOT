@@ -50,14 +50,30 @@ class ChatSummaryFAQ(commands.Cog):
             summary.append(f"**{msg.author.display_name}:** {msg.content[:200]}")
         return "\n".join(summary)
 
+    MAX_DISCORD_MSG_LENGTH = 1900  # Leave room for header and footer
+
     async def handle_question(self, message, question_text):
-        match, index, score, channel = await self.search_all_channels(message.guild, question_text)
-        if score >= 4 and match and channel:
-            summary = self.make_summary(match, index)
-            await message.reply(
-                f"🔁 Found a similar conversation in {channel.mention}:\n\n{summary}\n\n📍 [Jump]({match[index].jump_url})",
-                mention_author=False
-            )
+        try:
+            match, index, score, channel = await self.search_all_channels(message.guild, question_text)
+            print(f"[DEBUG] Best score: {score}, Channel: {channel}, Index: {index}")
+
+            if score >= 4 and match and channel:
+                summary = self.make_summary(match, index)
+
+                # Truncate if too long
+                if len(summary) > MAX_DISCORD_MSG_LENGTH:
+                    summary = summary[:MAX_DISCORD_MSG_LENGTH] + "\n... (truncated)"
+
+                await message.reply(
+                    f"🔁 Found a similar conversation in {channel.mention}:\n\n{summary}\n\n📍 [Jump]({match[index].jump_url})",
+                    mention_author=False
+                )
+            else:
+                await message.reply("❌ No similar messages found.", mention_author=False)
+        except Exception as e:
+            await message.reply(f"⚠️ Error during search: {e}")
+            print(f"[ERROR] Exception in handle_question: {e}")
+
 
     @commands.Cog.listener()
     async def on_message(self, message):
