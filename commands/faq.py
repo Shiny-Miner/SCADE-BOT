@@ -3,7 +3,7 @@ from discord.ext import commands
 import re
 from collections import Counter
 
-MAX_MESSAGES = 500  # Messages per channel to scan
+MAX_MESSAGES = 2000  # Messages per channel to scan
 STOP_WORDS = {"the", "and", "or", "is", "a", "an", "to", "in", "of", "on", "at", "for", "it", "as", "be", "with", "this", "that", "are", "was", "were", "has", "have", "you", "your", "i", "my"}
 
 def tokenize(text):
