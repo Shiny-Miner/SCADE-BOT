@@ -26,9 +26,19 @@ class ChatSummaryFAQ(commands.Cog):
         best_channel = None
         current_words = tokenize(current_question)
 
+        ALLOWED_CHANNEL_IDS = []  # Optional: add your channel IDs to search, or leave empty to search all
+
         for channel in guild.text_channels:
+            if ALLOWED_CHANNEL_IDS and channel.id not in ALLOWED_CHANNEL_IDS:
+                continue
+
             try:
-                history = [msg async for msg in channel.history(limit=MAX_MESSAGES) if not msg.author.bot]
+                history = []
+                async for msg in channel.history(limit=MAX_MESSAGES):
+                    if not msg.author.bot:
+                        history.append(msg)
+                await asyncio.sleep(0.7)  # ✅ delay to avoid rate-limiting
+
                 for i, msg in enumerate(history):
                     score = self.word_overlap_score(current_words, tokenize(msg.content))
                     if score > best_score:
@@ -36,8 +46,14 @@ class ChatSummaryFAQ(commands.Cog):
                         best_match = history
                         best_index = i
                         best_channel = channel
+
             except discord.Forbidden:
+                print(f"[WARNING] No access to {channel.name}")
                 continue
+            except discord.HTTPException as e:
+                print(f"[ERROR] Failed to fetch messages from {channel.name}: {e}")
+                continue
+
 
         return best_match, best_index, best_score, best_channel
 
