@@ -43,7 +43,6 @@ async def setup_hook():
     await bot.load_extension("commands.showoff_sunday")
     await bot.load_extension("commands.invisible_spy")
     await bot.load_extension("games.guesspoke")
-    await bot.load_extension("commands.faq")
 
 
 keep_alive()
