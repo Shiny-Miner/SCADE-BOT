@@ -16,5 +16,7 @@ Functionalities:
 - Welcomer
 - AI chat
 - Guessing pokemon game (by image)
+  
 No one should use this code without permission, i could have made it private but my hosting site uses this so i can't do anything.
+
 Made using Python 3.10.12 with discord.py
