@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands, tasks
 from collections import defaultdict
 import time
+from datetime import timedelta
 
 # Configurable constants
 SPAM_MESSAGE_LIMIT = 5
@@ -64,7 +65,7 @@ class AntiAbuseProtector(commands.Cog):
 
     async def timeout_user(self, member: discord.Member, guild: discord.Guild, reason: str):
         try:
-            await member.timeout(discord.utils.utcnow() + discord.timedelta(seconds=TIMEOUT_DURATION), reason=reason)
+            await member.timeout(discord.utils.utcnow() + timedelta(seconds=TIMEOUT_DURATION), reason=reason)
         except discord.Forbidden:
             pass
 
@@ -78,20 +79,20 @@ class AntiAbuseProtector(commands.Cog):
     async def cleanup_loop(self):
         try:
             now = time.time()
-            for logs in (self.msg_logs, self.attach_logs, self.repeated_logs):
+            # msg_logs / attach_logs hold plain timestamps
+            for logs in (self.msg_logs, self.attach_logs):
                 for user_id in list(logs.keys()):
-                    if isinstance(logs[user_id], list):
-                        logs[user_id] = [t for t in logs[user_id] if now - t < TIME_WINDOW]
-                        if not logs[user_id]:
-                            del logs[user_id]
-                    else:
-                        logs[user_id] = [
-                            (msg, ch, ts)
-                            for msg, ch, ts in logs[user_id]
-                            if now - ts < HACK_WINDOW
-                        ]
-                        if not logs[user_id]:
-                            del logs[user_id]
+                    logs[user_id] = [t for t in logs[user_id] if now - t < TIME_WINDOW]
+                    if not logs[user_id]:
+                        del logs[user_id]
+            # repeated_logs holds (message, channel, timestamp) tuples
+            for user_id in list(self.repeated_logs.keys()):
+                self.repeated_logs[user_id] = [
+                    (msg, ch, ts) for msg, ch, ts in self.repeated_logs[user_id]
+                    if now - ts < HACK_WINDOW
+                ]
+                if not self.repeated_logs[user_id]:
+                    del self.repeated_logs[user_id]
         except Exception as e:
             print(f"[cleanup_loop ERROR] {type(e).__name__}: {e}")
 
