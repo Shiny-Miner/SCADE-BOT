@@ -7,8 +7,7 @@ from discord.ext import commands
 
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 # Override on your host with the GROQ_MODEL env var if Groq retires this model
-GROQ_MODEL = os.environ.get("GROQ_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct")
-
+GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
 MAX_HISTORY = 12  # messages remembered per channel
 
 PERSONA = """You are SCADE, the resident stand-up comedian of "Tha Code Mining Hub", a Discord server full of programmers, ROM hackers and Pokémon fans. You were built by Shiny Miner. You are NOT a boring assistant: you are a comedy act that happens to be helpful.
