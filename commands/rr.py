@@ -120,7 +120,7 @@ class ReactionRoles(commands.Cog):
         await self.bot.db.execute(
             "INSERT INTO reaction_roles (message_id, emoji, role_id, guild_id, channel_id) VALUES (?, ?, ?, ?, ?) "
             "ON CONFLICT(message_id, emoji) DO UPDATE SET role_id = excluded.role_id, "
-            "guild_id = excluded.guild_id, channel_id = COALESCE(excluded.channel_id, channel_id)",
+            "guild_id = excluded.guild_id, channel_id = COALESCE(excluded.channel_id, reaction_roles.channel_id)",
             (message_id, emoji_key, role.id, ctx.guild.id, channel_id),
         )
         self.data.setdefault(message_id, {})[emoji_key] = role.id

@@ -422,7 +422,8 @@ class PostgresDatabase(Database):
         import psycopg
         from psycopg.rows import dict_row
 
-        self.conn = psycopg.connect(self.url, row_factory=dict_row, connect_timeout=15)
+        # prepare_threshold=None: no cached query plans, so it also works behind a connection pooler (pgbouncer)
+        self.conn = psycopg.connect(self.url, row_factory=dict_row, connect_timeout=15, prepare_threshold=None)
 
     def _connect(self):
         self._open()

@@ -229,6 +229,7 @@ class Pokemon(commands.Cog):
         self.xp_cooldown = {}  # user_id -> time
         self.spawn_cfg = {}    # guild_id -> [channel ids]
         self.incense_next = {}  # channel_id -> time
+        self.incense = {}       # channel_id -> expires_at (mirror of the table, so the loop never polls the database)
         self._names_task = None
 
     # ----------------------------------------------------------- lifecycle
@@ -238,6 +239,8 @@ class Pokemon(commands.Cog):
         )
         self.api = PokeAPI(self.session)
         await self._load_names_from_db()
+        rows = await self.bot.db.fetchall("SELECT channel_id, expires_at FROM incense")
+        self.incense = {r["channel_id"]: r["expires_at"] for r in rows}
         self._names_task = asyncio.create_task(self._refresh_names())
         self.incense_loop.start()
 
@@ -494,14 +497,15 @@ class Pokemon(commands.Cog):
 
     @tasks.loop(seconds=20)
     async def incense_loop(self):
+        # Works from memory: the database is only touched when an incense actually burns out
         try:
             now = int(time.time())
-            for row in await self.bot.db.fetchall("SELECT * FROM incense"):
-                cid = row["channel_id"]
+            for cid, expires_at in list(self.incense.items()):
                 channel = self.bot.get_channel(cid)
-                if row["expires_at"] <= now:
-                    await self.bot.db.execute("DELETE FROM incense WHERE channel_id = ?", (cid,))
+                if expires_at <= now:
+                    self.incense.pop(cid, None)
                     self.incense_next.pop(cid, None)
+                    await self.bot.db.execute("DELETE FROM incense WHERE channel_id = ?", (cid,))
                     if channel:
                         try:
                             await channel.send("🕯️ The incense burned out.")
@@ -1083,9 +1087,9 @@ class Pokemon(commands.Cog):
 
         # incense
         now = int(time.time())
-        active = await self.bot.db.fetchone("SELECT expires_at FROM incense WHERE channel_id = ? AND expires_at > ?", (ctx.channel.id, now))
-        if active:
-            return await ctx.send(f"🕯️ Incense is already burning here (ends <t:{active['expires_at']}:R>).")
+        active_until = self.incense.get(ctx.channel.id, 0)
+        if active_until > now:
+            return await ctx.send(f"🕯️ Incense is already burning here (ends <t:{active_until}:R>).")
 
         def burn(conn):
             if ps.item_qty(conn, uid, key) <= 0:
@@ -1099,6 +1103,7 @@ class Pokemon(commands.Cog):
 
         if not await self.bot.db.transaction(burn):
             return await ctx.send(f"❌ You don't have any incense. Buy one with `{PREFIX}buy incense`.")
+        self.incense[ctx.channel.id] = now + INCENSE_SECONDS
         self.incense_next[ctx.channel.id] = time.time() + 5
         await ctx.send(f"🕯️ Incense lit! Pokémon will appear here often until <t:{now + INCENSE_SECONDS}:t>.")
 

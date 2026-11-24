@@ -56,7 +56,7 @@ def add_pokemon(conn, owner_id, species_id, level, ivs, nature, shiny=False, cau
     if caught:
         conn.execute(
             "INSERT INTO pokedex (user_id, species_id, count, first_at) VALUES (?, ?, 1, ?) "
-            "ON CONFLICT(user_id, species_id) DO UPDATE SET count = count + 1",
+            "ON CONFLICT(user_id, species_id) DO UPDATE SET count = pokedex.count + 1",
             (owner_id, species_id, now),
         )
         conn.execute(
@@ -144,7 +144,7 @@ def item_qty(conn, user_id, item) -> int:
 def add_item(conn, user_id, item, qty):
     conn.execute(
         "INSERT INTO items (user_id, item, qty) VALUES (?, ?, ?) "
-        "ON CONFLICT(user_id, item) DO UPDATE SET qty = qty + excluded.qty",
+        "ON CONFLICT(user_id, item) DO UPDATE SET qty = items.qty + excluded.qty",
         (user_id, item, qty),
     )
     conn.execute("DELETE FROM items WHERE user_id = ? AND item = ? AND qty <= 0", (user_id, item))
