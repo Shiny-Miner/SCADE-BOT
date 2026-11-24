@@ -6,8 +6,15 @@ import discord
 from discord.ext import commands
 
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-# Override on your host with the GROQ_MODEL env var if Groq retires this model
-GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+# llama-3.3-70b-versatile was shut down by Groq on 2026-08-16.
+# If you set GROQ_MODEL on your host, make sure it is NOT an old model (delete it or change it).
+DEFAULT_MODEL = "openai/gpt-oss-120b"
+RETIRED_MODELS = {"llama-3.3-70b-versatile", "llama-3.1-8b-instant", "qwen/qwen3-32b",
+                  "meta-llama/llama-4-scout-17b-16e-instruct", "qwen/qwen3.6-27b"}
+GROQ_MODEL = os.environ.get("GROQ_MODEL") or DEFAULT_MODEL
+if GROQ_MODEL in RETIRED_MODELS:
+    print(f"[Fun] GROQ_MODEL '{GROQ_MODEL}' is retired, using {DEFAULT_MODEL} instead.")
+    GROQ_MODEL = DEFAULT_MODEL
 MAX_HISTORY = 12  # messages remembered per channel
 
 PERSONA = """You are SCADE, the resident stand-up comedian of "Tha Code Mining Hub", a Discord server full of programmers, ROM hackers and Pokémon fans. You were built by Shiny Miner. You are NOT a boring assistant: you are a comedy act that happens to be helpful.
@@ -90,7 +97,8 @@ class Fun(commands.Cog):
             "model": GROQ_MODEL,
             "messages": messages,
             "temperature": temperature,
-            "max_tokens": max_tokens,
+            "max_tokens": max_tokens + 600,  # gpt-oss "thinks" first; leave room so the answer isn't cut off
+            "reasoning_effort": "low",
         }
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
         try:
@@ -99,7 +107,11 @@ class Fun(commands.Cog):
                     print(f"[Fun] GROQ error {resp.status}: {await resp.text()}")
                     return None
                 data = await resp.json()
-                return data["choices"][0]["message"]["content"].strip()
+                text = (data["choices"][0]["message"].get("content") or "").strip()
+                if not text:
+                    print(f"[Fun] GROQ returned empty content: {data}")
+                    return None
+                return text
         except Exception as e:
             print(f"[Fun] GROQ request failed: {type(e).__name__}: {e}")
             return None

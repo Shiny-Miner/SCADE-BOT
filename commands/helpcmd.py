@@ -7,9 +7,9 @@ from discord.ext import commands
 CATEGORIES = {
     "🤖 Fun & AI": ["Fun"],
     "🧰 Utility": ["HelpCog", "Polls", "TranslatorCog", "Avatar", "AFK", "Recall"],
-    "🎮 Games": ["GuessPokemon"],
+    "🎮 Pokémon": ["Pokemon", "PokemonBattle", "PokemonMarket"],
     "🛡️ Moderation": ["Moderation", "ChannelLocker"],
-    "⚙️ Server Tools": ["ReactionRoles", "EmojiManager", "Welcomer", "InvisibleSpy"],
+    "⚙️ Server Tools": ["ReactionRoles", "EmojiManager", "Welcomer", "InvisibleSpy", "Backup"],
 }
 
 # Description / example / notes for every command (keyed by full command name).
@@ -32,7 +32,7 @@ INFO = {
         "desc": "Start a timed poll with live vote bars.",
         "example": "!poll 2m Best editor? | VS Code | Vim | Notepad",
         "notes": (
-            "Time is optional: `30`, `90s`, `5m`, `2h` (10s–24h, default 60s).\n"
+            "Time is optional: `30`, `90s`, `5m`, `2h`, `3d` (10s–7 days, default 60s).\n"
             "Separate the question and options with `|`, or use quotes: `!poll 30 \"Tabs or spaces?\" \"Tabs\" \"Spaces\"`.\n"
             "2–10 options. Leave the options off for a quick 👍/👎 poll. People can change their vote."
         ),
@@ -43,9 +43,50 @@ INFO = {
     "setrecall": {"desc": "Save a message under a key. (Admin)", "example": "!setrecall rules Be nice!"},
     "delrecall": {"desc": "Delete a saved recall message. (Admin)", "example": "!delrecall rules"},
     "listrecall": {"desc": "List all saved recall keys.", "example": "!listrecall"},
-    "guesspoke": {"desc": "Start a guess-the-Pokémon game right now.", "example": "!guesspoke",
-                  "notes": "One also pops up on its own after lots of chatting. Type the name to guess!"},
-    "hint": {"desc": "Get a hint during an active Pokémon game.", "example": "!hint"},
+    "start": {"desc": "Begin your pokémon journey.", "example": "!start",
+              "notes": "Wild pokémon appear while people chat. Guess the name with `!catch`, level up your selected pokémon by chatting, evolve them, fill the pokédex and trade!"},
+    "pick": {"desc": "Choose your starter pokémon.", "example": "!pick charmander"},
+    "catch": {"desc": "Catch the wild pokémon by typing its name.", "example": "!catch pikachu", "notes": "Alias: `!c`. Wrong guesses are free, but the first correct one wins!"},
+    "hint": {"desc": "Get a hint for the wild pokémon.", "example": "!hint"},
+    "pokemon": {"desc": "Show your pokémon collection.", "example": "!pokemon sort:iv",
+                "notes": "Options (mix them): a page number, `shiny`, `fav`, `legendary`, `mythical`, `ub`, `sort:iv|level|dex|recent|num`, `name:pika`. Aliases: `!pk`."},
+    "info": {"desc": "Show details about one of your pokémon.", "example": "!info 12", "notes": "No number = your selected pokémon. `!info latest` = your newest catch."},
+    "select": {"desc": "Choose which pokémon gains XP from your chatting.", "example": "!select 12"},
+    "nickname": {"desc": "Give a pokémon a nickname.", "example": "!nickname 12 Sparky", "notes": "Without a number it renames your selected pokémon. `!nickname reset` removes it."},
+    "favorite": {"desc": "Star a pokémon so it can't be released or traded.", "example": "!favorite 12"},
+    "release": {"desc": "Release pokémon for coins.", "example": "!release 12 15 20"},
+    "pokedex": {"desc": "See your pokédex progress, or look up a species.", "example": "!dex pikachu"},
+    "shinyhunt": {"desc": "Hunt a shiny: every catch of it boosts your odds.", "example": "!shinyhunt eevee", "notes": "`!shinyhunt off` to stop. Base shiny odds are 1/4096."},
+    "silence": {"desc": "Toggle level-up messages for yourself.", "example": "!silence"},
+    "balance": {"desc": "Show your coins and trainer stats.", "example": "!balance"},
+    "daily": {"desc": "Claim your daily coins (streaks pay more).", "example": "!daily"},
+    "shop": {"desc": "See what you can buy with coins.", "example": "!shop"},
+    "buy": {"desc": "Buy an item from the shop.", "example": "!buy rarecandy 3"},
+    "bag": {"desc": "Show your items.", "example": "!bag"},
+    "use": {"desc": "Use an item: Rare Candy levels up your selected pokémon, Incense makes pokémon spawn fast here, evolution stones evolve it.", "example": "!use fire stone"},
+    "pay": {"desc": "Give coins to another trainer.", "example": "!pay @friend 500"},
+    "leaderboard": {"desc": "Top trainers.", "example": "!lb shinies", "notes": "Categories: `catches`, `shinies`, `coins`, `pokedex`, `battles`."},
+    "trade": {"desc": "Offer a swap (or a gift) to another trainer.", "example": "!trade @friend 12 7",
+              "notes": "`12` is your pokémon, `7` is theirs. They must press Accept. Favorites can't be traded."},
+    "give": {"desc": "Gift one of your pokémon to someone.", "example": "!give @friend 12"},
+    "redirect": {"desc": "Choose where wild pokémon spawn. (Manage Server)", "example": "!redirect #pokemon", "notes": "`!redirect clear` to spawn wherever people chat."},
+    "forcespawn": {"desc": "Spawn a wild pokémon right now. (Manage Server)", "example": "!forcespawn pikachu"},
+    "moves": {"desc": "Show a pokémon's moves. Stronger moves unlock as it levels.", "example": "!moves 12",
+              "notes": "Moves come from the pokémon's types: a Fire pokémon gets Fire moves plus Normal coverage. Power unlocks at levels 1, 15, 30 and 50."},
+    "team": {"desc": "Set your battle team (up to 3 pokémon).", "example": "!team add 12",
+             "notes": "`!team`, `!team add <number>`, `!team remove <number>`, `!team clear`. With no team, battles use your selected pokémon."},
+    "battle": {"desc": "Challenge another trainer to a turn-based battle.", "example": "!battle @friend",
+               "notes": "Press **Choose move** each turn (your choice is private). Faster pokémon attack first and type matchups matter. Winner earns coins + XP (first 10 battles a day). Alias: `!duel`."},
+    "market": {"desc": "Buy and sell pokémon for coins.", "example": "!market list 12 5000",
+               "notes": "`!market search sort:price name:pika`, `!market list <number> <price>`, `!market buy <id>`, `!market info <id>`, `!market mine`, `!market remove <id>`. Sellers pay a 2% fee. Alias: `!mk`."},
+    "rr_list": {"desc": "List all reaction roles and whether each one can work. (Manage Roles)", "example": "!rr_list"},
+    "rr_check": {"desc": "Diagnose why a reaction role isn't working. (Manage Roles)", "example": "!rr_check 123456789",
+                 "notes": "Checks the bot's role order and permissions. The bot can only give roles that are BELOW its own highest role; Administrator doesn't bypass this."},
+    "delwarn": {"desc": "Remove one warning from a member.", "example": "!delwarn @user 2"},
+    "clearwarns": {"desc": "Remove all warnings from a member.", "example": "!clearwarns @user"},
+    "dbstatus": {"desc": "Show where the database lives and what is stored. (Owner)", "example": "!dbstatus"},
+    "backup": {"desc": "Make a database backup now. (Owner)", "example": "!backup", "notes": "Uploads to the backup channel (if set) and DMs you a copy."},
+    "restore": {"desc": "Restore a database backup. (Owner)", "example": "!restore confirm", "notes": "Attach a `scade-backup-….db.gz` file to the same message."},
     "lock": {"desc": "Lock this channel so @everyone can't send messages.", "example": "!lock"},
     "unlock": {"desc": "Unlock this channel again.", "example": "!unlock"},
     "purge": {"desc": "Bulk-delete recent messages in this channel.", "example": "!purge 20"},
@@ -178,16 +219,28 @@ class HelpCog(commands.Cog):
             names = " ".join(f"`{c.qualified_name}`" for c in cmds)
             home.add_field(name=category, value=names, inline=False)
 
-            lines = []
+            blocks = []
             for c in cmds:
                 info = INFO.get(c.qualified_name, {})
                 block = f"**`{usage_line(ctx, c)}`**\n{describe(c)}"
                 if info.get("example"):
                     block += f"\n*Example:* `{info['example']}`"
-                lines.append(block)
-            embed = discord.Embed(title=category, description="\n\n".join(lines)[:4000], color=discord.Color.blurple())
-            embed.set_footer(text=f"{ctx.clean_prefix}help <command> for more details")
-            pages[category] = embed
+                blocks.append(block)
+
+            # Discord embeds hold ~4000 characters, so long categories become several pages
+            chunks, current = [], ""
+            for block in blocks:
+                if current and len(current) + len(block) + 2 > 3600:
+                    chunks.append(current)
+                    current = ""
+                current = f"{current}\n\n{block}" if current else block
+            chunks.append(current)
+
+            for n, chunk in enumerate(chunks, start=1):
+                title = category if len(chunks) == 1 else f"{category} ({n})"
+                embed = discord.Embed(title=title, description=chunk, color=discord.Color.blurple())
+                embed.set_footer(text=f"{ctx.clean_prefix}help <command> for more details")
+                pages[title] = embed
 
         home.set_footer(text="Only commands you're allowed to use are shown.")
         view = HelpView(ctx.author.id, pages)

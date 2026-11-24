@@ -1,10 +1,11 @@
+import time
+
 import discord
 from discord.ext import commands
 
 class Moderation(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.warns = {}
 
     # --------------------- PURGE ---------------------
     @commands.command()
@@ -70,21 +71,53 @@ class Moderation(commands.Cog):
         else:
             await ctx.send("❌ This user is not muted.")
 
-    # --------------------- WARN ---------------------
+    # --------------------- WARN (saved in the database) ---------------------
     @commands.command()
     @commands.has_permissions(manage_messages=True)
     async def warn(self, ctx, member: discord.Member, *, reason="No reason provided"):
-        self.warns.setdefault(member.id, []).append(reason)
+        await self.bot.db.execute(
+            "INSERT INTO warnings (guild_id, user_id, moderator_id, reason, created_at) VALUES (?, ?, ?, ?, ?)",
+            (ctx.guild.id, member.id, ctx.author.id, reason[:500], int(time.time())),
+        )
+        self.bot.dispatch("scade_data_changed")
         await ctx.send(f"⚠️ {member.mention} was warned. Reason: {reason}")
 
     @commands.command()
     async def warnings(self, ctx, member: discord.Member):
-        warns = self.warns.get(member.id, [])
-        if warns:
-            warn_list = "\n".join(f"{i+1}. {w}" for i, w in enumerate(warns))
-            await ctx.send(f"📋 {member.mention} has {len(warns)} warning(s):\n{warn_list}")
+        rows = await self.bot.db.fetchall(
+            "SELECT reason, created_at FROM warnings WHERE guild_id = ? AND user_id = ? ORDER BY id",
+            (ctx.guild.id, member.id),
+        )
+        if rows:
+            warn_list = "\n".join(
+                f"{i + 1}. {r['reason']} (<t:{r['created_at']}:R>)" for i, r in enumerate(rows)
+            )
+            await ctx.send(f"📋 {member.mention} has {len(rows)} warning(s):\n{warn_list}"[:2000])
         else:
             await ctx.send(f"✅ {member.mention} has no warnings.")
+
+    @commands.command(name="delwarn")
+    @commands.has_permissions(manage_messages=True)
+    async def delwarn(self, ctx, member: discord.Member, number: int):
+        """Remove one warning (use the number shown by !warnings)."""
+        rows = await self.bot.db.fetchall(
+            "SELECT id FROM warnings WHERE guild_id = ? AND user_id = ? ORDER BY id", (ctx.guild.id, member.id)
+        )
+        if not 1 <= number <= len(rows):
+            return await ctx.send(f"❌ {member.display_name} has {len(rows)} warning(s); pick a number from 1 to {len(rows)}.")
+        await self.bot.db.execute("DELETE FROM warnings WHERE id = ?", (rows[number - 1]["id"],))
+        self.bot.dispatch("scade_data_changed")
+        await ctx.send(f"🗑️ Removed warning #{number} from {member.mention}.")
+
+    @commands.command(name="clearwarns")
+    @commands.has_permissions(manage_messages=True)
+    async def clearwarns(self, ctx, member: discord.Member):
+        """Remove ALL warnings from a member."""
+        await self.bot.db.execute(
+            "DELETE FROM warnings WHERE guild_id = ? AND user_id = ?", (ctx.guild.id, member.id)
+        )
+        self.bot.dispatch("scade_data_changed")
+        await ctx.send(f"🧽 Cleared all warnings for {member.mention}.")
 
 async def setup(bot):
     await bot.add_cog(Moderation(bot))

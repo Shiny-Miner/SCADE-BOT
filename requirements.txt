@@ -2,3 +2,5 @@ discord.py>=2.3
 flask
 aiohttp
 deep-translator>=1.11.4
+python-dotenv
+psycopg[binary]>=3.1
